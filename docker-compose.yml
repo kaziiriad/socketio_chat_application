@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./index.html:/usr/share/nginx/html/index.html:ro  # Add this
+    depends_on:
+      - chat
+    networks:
+      - chat_network
+
+  chat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - chat_network
+    depends_on:
+      - redis
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      - chat_network
+
+networks:
+  chat_network:
+    driver: bridge
+
+volumes:
+  redis_data:
